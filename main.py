@@ -3,7 +3,37 @@ import discord
 import asyncio
 from dotenv import load_dotenv
 import os
+from discord import ui
+from functools import partial
 
+a_emoji = discord.PartialEmoji(name="A", id=1378874248562737254)
+b_emoji = discord.PartialEmoji(name="B", id=1378874232703811594)
+c_emoji = discord.PartialEmoji(name="C", id=1378874211543810058)
+d_emoji = discord.PartialEmoji(name="D", id=1378874354900795453)
+
+emoji_list = [a_emoji, b_emoji, c_emoji, d_emoji]
+
+class Questionnaire(discord.ui.Modal, title="Questionnaire Response"):
+    name = discord.ui.TextInput(label="Name")
+    answer = discord.ui.TextInput(label="Answer", style=discord.TextStyle.paragraph)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        print(f"{self.name.value}\n{self.answer.value}")
+        await interaction.response.send_message(f"Thanks for your response, {self.name}!", ephemeral=True)
+
+class QuestionnaireView(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+
+        for emoji in emoji_list:
+            button = discord.ui.Button(style=discord.ButtonStyle.grey, emoji=emoji)
+            button.callback = partial(self.button_callback, emoji=emoji)
+            self.add_item(button) 
+
+    async def button_callback(self,interaction: discord.Interaction, emoji):
+        if emoji != None:
+            await interaction.response.send_message(f"{interaction.user.display_name} Pressure option {emoji.name}")
+    
 
 load_dotenv()
 # --- Discord Information ---
@@ -27,6 +57,11 @@ async def testing_command_handler(discord_client: ChidoriDiscordBot, discord_mes
     print(args)
     channel_id = discord_message.channel
     await channel_id.send(f"{args}")
+
+async def choose_choice(discord_client: ChidoriDiscordBot, discord_message: discord.Message)-> None:
+    question_view = QuestionnaireView()
+    channel_id = discord_message.channel
+    await channel_id.send("Hello", view=question_view)
 
 async def send_dm_to_person(discord_client: ChidoriDiscordBot, discord_message: discord.Message) -> None:
     args = (discord_message.content.split(" "))[1:]
@@ -57,6 +92,7 @@ def main():
     discord_client.add_command("test", testing_command_handler)
     discord_client.add_command("members", get_discord_ids)
     discord_client.add_command("message", send_dm_to_person)
+    discord_client.add_command("testing", choose_choice)
     discord_client.run(DISCORD_TOKEN)
 
 
